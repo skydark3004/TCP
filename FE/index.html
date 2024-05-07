@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test socket</title>
+  </head>
+
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+    integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+  <script type="module">
+    import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
+  </script>
+
+  <body>
+    <h1>Đèn 1</h1>
+    <button id="light" style="color: red">ON</button>
+    <br />
+    <button id="on-off" style="margin-top: 100px">Tắt đèn 1</button>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+      integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <script type="module">
+      import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
+      var socket = io('http://localhost:3000', { transports: ['websocket'] });
+      socket.on('connect', () => {
+        console.log(socket.id); // ojIckSD2jqNzOqIrAGzL
+        getInitValueFromLight();
+      });
+
+      const light = document.getElementById('light');
+      const switchLight = document.getElementById('on-off');
+
+      switchLight.onclick = () => {
+        console.log('on click');
+        socket.emit('ON_OFF_LIGHT');
+      };
+
+      socket.on('GET_INIT_VALUE_FROM_LIGHT', (value) => {
+        console.log(value);
+        light.style.color = value === 'DEN_1_ON' ? 'red' : 'silver';
+        light.innerHTML = value === 'DEN_1_ON' ? 'Sáng' : 'Tắt';
+      });
+
+      socket.on('ON_OFF_LIGHT', (value) => {
+        console.log('ON_OFF_LIGHT:: ', value);
+        light.style.color = value === 'DEN_1_ON' ? 'red' : 'silver';
+        light.innerHTML = value === 'DEN_1_ON' ? 'Sáng' : 'Tắt';
+      });
+
+      function getInitValueFromLight() {
+        socket.emit('GET_INIT_VALUE_FROM_LIGHT');
+      }
+      //getInitValueFromLight()
+    </script>
+  </body>
+</html>
