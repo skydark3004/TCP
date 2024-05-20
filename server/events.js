@@ -1,3 +1,4 @@
-export const events = {
-    
-}
+exports.EVENTS_FROM_WEB = {
+  GET_INIT_VALUE_FROM_LIGHT: 'GET_INIT_VALUE_FROM_LIGHT',
+  ON_OFF_LIGHT: 'ON_OFF_LIGHT',
+};

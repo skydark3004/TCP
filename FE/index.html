@@ -18,9 +18,14 @@
 
   <body>
     <h1>Đèn 1</h1>
-    <button id="light" style="color: red">ON</button>
+    <button id="light-1" style="color: red">Sáng</button>
     <br />
-    <button id="on-off" style="margin-top: 100px">Tắt đèn 1</button>
+    <button id="on-off-1" style="margin-top: 10px">Tắt đèn 1</button>
+
+    <h1 style="margin-top: 150px">Đèn 2</h1>
+    <button id="light-2" style="color: red">Sáng</button>
+    <br />
+    <button id="on-off-2" style="margin-top: 10px">Tắt đèn 2</button>
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
@@ -31,36 +36,119 @@
 
     <script type="module">
       import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
-      var socket = io('http://localhost:3000', { transports: ['websocket'] });
+      const socket = io('http://localhost:3000', { transports: ['websocket'] });
       socket.on('connect', () => {
-        console.log(socket.id); // ojIckSD2jqNzOqIrAGzL
         getInitValueFromLight();
       });
 
-      const light = document.getElementById('light');
-      const switchLight = document.getElementById('on-off');
+      const EVENTS_OF_EACH_LIGHT = {
+        LIGHT_1: {
+          TURN_ON: '000000000000000000001',
+          TURN_OFF: '000000000000000000011',
+        },
+        LIGHT_2: {
+          TURN_ON: '000000000000000000002',
+          TURN_OFF: '000000000000000000022',
+        },
+      };
 
-      switchLight.onclick = () => {
-        console.log('on click');
-        socket.emit('ON_OFF_LIGHT');
+      const VALUES_OF_EACH_LIGHT = {
+        LIGHT_1: {
+          ON: '$EMS,1351219863,GET,1000#',
+          OFF: '$EMS,1351219863,GET,0000#',
+        },
+        LIGHT_2: {
+          ON: '$EMS,1351219863,GET,2000#',
+          OFF: '$EMS,1351219863,GET,2002#',
+        },
+      };
+
+      const STATUS_WHEN_COMPARE_WITH_INNER_HTML = {
+        ON: 'Sáng',
+        OFF: 'Tắt',
+      };
+
+      const LIGHT_1 = document.getElementById('light-1');
+      const LIGHT_2 = document.getElementById('light-2');
+      const BUTTON_ON_OFF_LIGHT_1 = document.getElementById('on-off-1');
+      const BUTTON_ON_OFF_LIGHT_2 = document.getElementById('on-off-2');
+
+      BUTTON_ON_OFF_LIGHT_1.onclick = () => {
+        const statusOfLight1 = LIGHT_1.innerHTML; // Sáng or Tắt
+
+        if (statusOfLight1 === STATUS_WHEN_COMPARE_WITH_INNER_HTML.ON) {
+          socket.emit('ON_OFF_LIGHT', EVENTS_OF_EACH_LIGHT.LIGHT_1.TURN_OFF);
+        }
+
+        if (statusOfLight1 === STATUS_WHEN_COMPARE_WITH_INNER_HTML.OFF) {
+          socket.emit('ON_OFF_LIGHT', EVENTS_OF_EACH_LIGHT.LIGHT_1.TURN_ON);
+        }
+      };
+
+      BUTTON_ON_OFF_LIGHT_2.onclick = () => {
+        const statusOfLight2 = LIGHT_2.innerHTML; // Sáng or Tắt
+
+        if (statusOfLight2 === STATUS_WHEN_COMPARE_WITH_INNER_HTML.ON) {
+          console.log('tắt đèn 2');
+
+          socket.emit('ON_OFF_LIGHT', EVENTS_OF_EACH_LIGHT.LIGHT_2.TURN_OFF);
+        }
+
+        if (statusOfLight2 === STATUS_WHEN_COMPARE_WITH_INNER_HTML.OFF) {
+          socket.emit('ON_OFF_LIGHT', EVENTS_OF_EACH_LIGHT.LIGHT_2.TURN_ON);
+        }
       };
 
       socket.on('GET_INIT_VALUE_FROM_LIGHT', (value) => {
-        console.log(value);
-        light.style.color = value === 'DEN_1_ON' ? 'red' : 'silver';
-        light.innerHTML = value === 'DEN_1_ON' ? 'Sáng' : 'Tắt';
+        console.log('GET_INIT_VALUE_FROM_LIGHT::', value);
+        const statusOfLight1 = getCurrentStatusFromLight('LIGHT_1', value.LIGHT_1); // ON or OFF
+        const statusOfLight2 = getCurrentStatusFromLight('LIGHT_2', value.LIGHT_2); // ON or OFF
+
+        LIGHT_1.style.color = statusOfLight1 === 'ON' ? 'red' : 'silver';
+        LIGHT_1.innerHTML = statusOfLight1 === 'ON' ? 'Sáng' : 'Tắt';
+        BUTTON_ON_OFF_LIGHT_1.innerHTML = statusOfLight1 === 'ON' ? 'Tắt đèn 1' : 'Bật đèn 1';
+
+        LIGHT_2.style.color = statusOfLight2 === 'ON' ? 'red' : 'silver';
+        LIGHT_2.innerHTML = statusOfLight2 === 'ON' ? 'Sáng' : 'Tắt';
+        BUTTON_ON_OFF_LIGHT_2.innerHTML = statusOfLight2 === 'ON' ? 'Tắt đèn 2' : 'Bật đèn 2';
       });
 
       socket.on('ON_OFF_LIGHT', (value) => {
         console.log('ON_OFF_LIGHT:: ', value);
-        light.style.color = value === 'DEN_1_ON' ? 'red' : 'silver';
-        light.innerHTML = value === 'DEN_1_ON' ? 'Sáng' : 'Tắt';
+        const isLight1 = value.type === 'LIGHT_1';
+        const isLight2 = value.type === 'LIGHT_2';
+        if (isLight1) {
+          const statusOfLight1 = getCurrentStatusFromLight('LIGHT_1', value.currentValue);
+          LIGHT_1.style.color = statusOfLight1 === 'ON' ? 'red' : 'silver';
+          LIGHT_1.innerHTML = statusOfLight1 === 'ON' ? 'Sáng' : 'Tắt';
+          BUTTON_ON_OFF_LIGHT_1.innerHTML = statusOfLight1 === 'ON' ? 'Tắt đèn 1' : 'Bật đèn 1';
+          return;
+        }
+
+        if (isLight2) {
+          const statusOfLight2 = getCurrentStatusFromLight('LIGHT_2', value.currentValue);
+          LIGHT_2.style.color = statusOfLight2 === 'ON' ? 'red' : 'silver';
+          LIGHT_2.innerHTML = statusOfLight2 === 'ON' ? 'Sáng' : 'Tắt';
+          BUTTON_ON_OFF_LIGHT_2.innerHTML = statusOfLight2 === 'ON' ? 'Tắt đèn 2' : 'Bật đèn 2';
+          return;
+        }
       });
 
       function getInitValueFromLight() {
         socket.emit('GET_INIT_VALUE_FROM_LIGHT');
       }
-      //getInitValueFromLight()
+
+      function getCurrentStatusFromLight(key, currentValue) {
+        const isOn = VALUES_OF_EACH_LIGHT[key].ON === currentValue;
+        if (isOn) {
+          return 'ON';
+        }
+
+        const isOff = VALUES_OF_EACH_LIGHT[key].OFF === currentValue;
+        if (isOff) {
+          return 'OFF';
+        }
+      }
     </script>
   </body>
 </html>

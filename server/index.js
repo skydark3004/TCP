@@ -3,11 +3,9 @@ const app = express();
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const {
-  handleWhenDeviceOutConnection,
-  sendDataToAllClients,
-} = require('./tcp-v2');
+const { handleWhenDeviceOutConnection, sendDataToAllClients } = require('./tcp-v2');
 const net = require('net');
+const { EVENTS_FROM_WEB } = require('./events');
 
 const PORT_TCP = process.env.PORT_TCP || 11000;
 const PORT = process.env.PORT_APP || 3000;
@@ -34,32 +32,6 @@ const server = createServer(app);
 
 server.listen(PORT, () => console.log(`Lisening Server on port `, PORT));
 
-let TcpConnections = [];
-// Socket
-const io = new Server(server);
-io.on('connection', (socket) => {
-  console.log('a user connected from socket.io');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
-
-  socket.on('ON_OFF_LIGHT', (value) => {
-    const event = {
-      type: 'ON_OFF_LIGHT',
-    };
-    sendDataToAllClients(JSON.stringify(event), TcpConnections);
-    console.log('ON_OFF_LIGHT: ', value);
-  });
-
-  socket.on('GET_INIT_VALUE_FROM_LIGHT', () => {
-    console.log('GET_INIT_VALUE_FROM_LIGHT: ');
-    const event = {
-      type: 'GET_INIT_VALUE_FROM_LIGHT',
-    };
-    sendDataToAllClients(JSON.stringify(event), TcpConnections);
-  });
-});
-
 const VALUE_OF_LIGHT_1 = {
   ON: '$EMS,1351219863,GET,1000#',
   OFF: '$EMS,1351219863,GET,0000#',
@@ -81,21 +53,53 @@ const ValueOfAllLights = {
   },
 };
 
+let TcpConnections = [];
+// Socket
+const io = new Server(server);
+io.on('connection', (socket) => {
+  console.log('a user connected from socket.io');
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+
+  socket.on('ON_OFF_LIGHT', (value) => {
+    console.log('ON_OFF_LIGHT: ', value);
+    sendDataToAllClients(value, TcpConnections);
+  });
+
+  socket.on(EVENTS_FROM_WEB.GET_INIT_VALUE_FROM_LIGHT, () => {
+    console.log('GET_INIT_VALUE_FROM_LIGHT: ');
+    const valueToEmit = {
+      LIGHT_1: ValueOfAllLights.LIGHT_1.currentValue,
+      LIGHT_2: ValueOfAllLights.LIGHT_2.currentValue,
+    };
+    io.emit(EVENTS_FROM_WEB.GET_INIT_VALUE_FROM_LIGHT, valueToEmit);
+  });
+});
+
 // TCP
 const serverTCP = net.createServer((socket) => {
   TcpConnections.push(socket);
 
   socket.on('data', (data) => {
-    console.log(data.toString());
-    const parseData = JSON.parse(data.toString());
+    const parseData = data.toString();
 
-    // xử lí các sự kiện mỗi khi nhận về data
-    if (parseData.type === 'GET_INIT_VALUE_FROM_LIGHT') {
-      io.emit('GET_INIT_VALUE_FROM_LIGHT', parseData.value);
+    if (ValueOfAllLights.LIGHT_1.allValues.includes(parseData)) {
+      ValueOfAllLights.LIGHT_1.currentValue = parseData;
+      const valueToEmit = {
+        type: 'LIGHT_1',
+        currentValue: parseData,
+      };
+      io.emit(EVENTS_FROM_WEB.ON_OFF_LIGHT, valueToEmit);
     }
 
-    if (parseData.type === 'ON_OFF_LIGHT') {
-      io.emit('ON_OFF_LIGHT', parseData.value);
+    if (ValueOfAllLights.LIGHT_2.allValues.includes(parseData)) {
+      ValueOfAllLights.LIGHT_2.currentValue = parseData;
+      const valueToEmit = {
+        type: 'LIGHT_2',
+        currentValue: parseData,
+      };
+      io.emit(EVENTS_FROM_WEB.ON_OFF_LIGHT, valueToEmit);
     }
 
     console.log('received data from device:', data.toString());
