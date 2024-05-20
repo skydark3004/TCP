@@ -1,6 +1,7 @@
 # compiled output
 /dist
 /node_modules
+/device/node_modules
 /nodejs-tcp/node_modules
 /server/node_modules
 /mongo-watcher/src/watcher/node_modules

@@ -3,7 +3,10 @@ const app = express();
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const { handleWhenDeviceOutConnection, sendDataToAllClients } = require('./tcp-v2');
+const {
+  handleWhenDeviceOutConnection,
+  sendDataToAllClients,
+} = require('./tcp-v2');
 const net = require('net');
 
 const PORT_TCP = process.env.PORT_TCP || 11000;
@@ -55,8 +58,28 @@ io.on('connection', (socket) => {
     };
     sendDataToAllClients(JSON.stringify(event), TcpConnections);
   });
-
 });
+
+const VALUE_OF_LIGHT_1 = {
+  ON: '$EMS,1351219863,GET,1000#',
+  OFF: '$EMS,1351219863,GET,0000#',
+};
+
+const VALUE_OF_LIGHT_2 = {
+  ON: '$EMS,1351219863,GET,2000#',
+  OFF: '$EMS,1351219863,GET,2002#',
+};
+
+const ValueOfAllLights = {
+  LIGHT_1: {
+    allValues: [VALUE_OF_LIGHT_1.ON, VALUE_OF_LIGHT_1.OFF],
+    currentValue: null,
+  },
+  LIGHT_2: {
+    allValues: [VALUE_OF_LIGHT_2.ON, VALUE_OF_LIGHT_2.OFF],
+    currentValue: null,
+  },
+};
 
 // TCP
 const serverTCP = net.createServer((socket) => {

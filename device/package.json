@@ -9,6 +9,8 @@
   "scripts": {
     "start": "nodemon index.js",
     "dev": "nodemon index.js",
+    "start-device-1": "nodemon device-1.js",
+    "start-device-2": "nodemon device-2.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "private": null,
